@@ -22,6 +22,7 @@ namespace ProjectEye.Core.Service
         /// </summary>
         private OptionsModel oldOptions_;
         public OptionsModel options { get; set; }
+        public bool IsFirstRun { get; private set; }
         /// <summary>
         /// 配置文件被修改时发生
         /// </summary>
@@ -37,6 +38,7 @@ namespace ProjectEye.Core.Service
         }
         public void Init()
         {
+            IsFirstRun = false;
             if (File.Exists(configPath))
             {
                 var obj = xmlExtensions.ToModel(typeof(OptionsModel));
@@ -82,6 +84,7 @@ namespace ProjectEye.Core.Service
         /// </summary>
         private void CreateDefaultConfig()
         {
+            IsFirstRun = true;
             options = new OptionsModel();
             options.General = new GeneralModel();
             options.General.Data = false;

@@ -71,7 +71,25 @@ namespace ProjectEye
                 WindowManager.serviceCollection = serviceCollection;
                 //初始化所有服务
                 serviceCollection.Initialize();
+                HandleStartupExperience();
                 OnServiceInitialized?.Invoke();
+            }
+        }
+
+        private void HandleStartupExperience()
+        {
+            var config = serviceCollection.GetInstance(typeof(ConfigService).FullName) as ConfigService;
+            var tray = serviceCollection.GetInstance(typeof(TrayService).FullName) as TrayService;
+            if (tray == null)
+            {
+                return;
+            }
+
+            tray.BalloonTipIcon("20min20s", "程序已启动，正在系统托盘中运行。");
+            if (config != null && config.IsFirstRun)
+            {
+                WindowManager.CreateWindowInScreen("OptionsWindow");
+                WindowManager.Show("OptionsWindow");
             }
         }
 
