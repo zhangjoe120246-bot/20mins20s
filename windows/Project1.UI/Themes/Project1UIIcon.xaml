@@ -9,7 +9,7 @@
 
     <Style TargetType="{x:Type controls:Project1UIIcon}">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="FontFamily" Value="/Project1.UI;component/Assets/IconFonts/#Segoe MDL2 Assets"/>
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
         <Setter Property="SnapsToDevicePixels" Value="False" />
         <Setter Property="Template">
             <Setter.Value>

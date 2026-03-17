@@ -61,7 +61,7 @@
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center"
                                 
-                                        FontFamily="/Project1.UI;component/Assets/IconFonts/#Segoe MDL2 Assets"
+                                        FontFamily="Segoe MDL2 Assets"
                                         FontSize="{TemplateBinding IconSize}"
                                     x:Name="IconTextBlock"
                                        />

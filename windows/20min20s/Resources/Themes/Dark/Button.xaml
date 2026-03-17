@@ -10,7 +10,7 @@
         <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="FontFamily" Value="/Project1.UI;component/Assets/IconFonts/#Segoe MDL2 Assets"/>
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
         <Setter Property="Foreground" Value="#d8d8d8"/>
         <!--<Setter Property="FontWeight" Value="Bold"/>-->
         <Setter Property="FontSize" Value="10"/>

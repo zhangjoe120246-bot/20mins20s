@@ -124,7 +124,7 @@
                                         Foreground="{TemplateBinding Foreground}"
                                         VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                         HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                        FontFamily="/Project1.UI;component/Assets/IconFonts/#Segoe MDL2 Assets"
+                                        FontFamily="Segoe MDL2 Assets"
                                         FontSize="{TemplateBinding IconSize}"
                                       
                                         />-->
