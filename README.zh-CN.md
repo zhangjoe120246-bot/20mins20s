@@ -18,7 +18,7 @@
 
 请从这里下载最新 Windows 发布包：
 
-- [GitHub Releases](https://github.com/zhangjoe120246-bot/20mins20s/releases/latest)
+- [GitHub Releases](https://github.com/tiyadegure/20mins20s/releases/latest)
 
 请使用完整的 zip 压缩包，不要只单独下载 `20min20s.exe`，因为程序运行依赖同目录下的 DLL 和其他运行时文件。
 

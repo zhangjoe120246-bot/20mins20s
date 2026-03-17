@@ -18,7 +18,7 @@ Windows-only eye-break reminder app based on the 20-20-20 rule.
 
 Download the latest packaged Windows build from:
 
-- [GitHub Releases](https://github.com/zhangjoe120246-bot/20mins20s/releases/latest)
+- [GitHub Releases](https://github.com/tiyadegure/20mins20s/releases/latest)
 
 Use the full zip package. Do not download only the standalone `20min20s.exe`, because the app depends on adjacent runtime files and DLLs.
 
