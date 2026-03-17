@@ -6,82 +6,37 @@ Windows-only eye-break reminder app based on the 20-20-20 rule.
 
 `20min20s` accumulates only effective usage time. If there is no real keyboard or mouse input for a while, the timer pauses. When a break becomes due during fullscreen apps such as games or videos, the reminder is deferred and shown after fullscreen exits.
 
-## Current behavior
+## Features
 
 - Counts only active use, not just uptime
 - Pauses timing after configurable inactivity
 - Defers reminders during fullscreen or configured foreground processes
 - Shows a 20-second break reminder after 20 minutes of effective use
-- Includes tray status, settings UI, statistics, and logging
+- Includes tray status, settings, statistics, and logging
 
-## Project layout
+## Download
 
-- `windows/20min20s`: main WPF app
-- `windows/Project1.UI`: shared UI library
+Download the latest packaged Windows build from:
 
-The `referrence/` and `docs/` directories are intentionally excluded from this repository. `referrence/` was used as an external reference during migration, and `docs/` is kept only for local notes.
+- [GitHub Releases](https://github.com/zhangjoe120246-bot/20mins20s/releases/latest)
 
-## Build
+Use the full zip package. Do not download only the standalone `20min20s.exe`, because the app depends on adjacent runtime files and DLLs.
 
-Requirements:
+## How It Works
 
-- Windows
-- .NET SDK 8.x for `dotnet msbuild`
-- .NET Framework 4.8 targeting pack or `Microsoft.NETFramework.ReferenceAssemblies.net48`
+- The timer counts only real usage time.
+- If there is no keyboard or mouse input for a while, timing pauses automatically.
+- If a reminder becomes due while you are in fullscreen, it is deferred and shown after fullscreen exits.
+- The tray icon reflects the current state so you can see whether the app is active, paused, suspended, or waiting to remind you.
 
-Build with:
+## Run
 
-```powershell
-pwsh -File .\windows\build-20min20s.ps1
-```
+1. Download the latest release zip.
+2. Extract it to any folder.
+3. Run `20min20s.exe`.
+4. The app stays in the system tray after startup.
 
-The packaging script now defaults to `Release` and refreshes the distributable files in `dist/`.
+## Notes
 
-Or:
-
-```powershell
-dotnet msbuild .\windows\20min20s.sln /t:Build /p:Configuration=Debug /p:Platform="Any CPU"
-```
-
-Release build:
-
-```powershell
-dotnet msbuild .\windows\20min20s.sln /t:Build /p:Configuration=Release /p:Platform="Any CPU"
-```
-
-Output:
-
-- `windows/20min20s/bin/Debug/20min20s.exe`
-- `windows/20min20s/bin/Release/20min20s.exe`
-- `dist/20min20s.exe`
-- `dist/20min20s-windows-1.4.3.zip`
-
-## Updates
-
-The in-app update check now reads releases from:
-
-- `https://github.com/zhangjoe120246-bot/20mins20s/releases/latest`
-
-Recommended release asset format:
-
-- `20min20s-windows-<version>.zip`
-
-Do not use a standalone `20min20s.exe` downloaded by itself. The app depends on adjacent runtime files and DLLs from the full release package.
-
-This app is derived from an earlier exploratory migration based on `ProjectEye`, but the current repository and release channel are `20min20s`.
-
-## Release
-
-Release builds can be prepared with:
-
-```powershell
-pwsh -File .\windows\build-20min20s.ps1
-```
-
-This updates:
-
-- `windows/20min20s/bin/Release/`
-- `dist/20min20s.exe`
-- `dist/20min20s-windows-1.4.3.zip`
-
-GitHub Release publishing notes are documented in [RELEASE.md](./RELEASE.md).
+- This project is Windows-only.
+- The current repository and release channel are `20min20s`.
