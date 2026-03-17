@@ -60,4 +60,6 @@ Recommended release asset format:
 
 - `20min20s-windows-v<version>.zip`
 
+Do not use a standalone `20min20s.exe` downloaded by itself. The app depends on adjacent runtime files and DLLs from the full release package.
+
 This app is derived from an earlier exploratory migration based on `ProjectEye`, but the current repository and release channel are `20min20s`.
