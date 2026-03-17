@@ -23,6 +23,7 @@ namespace ProjectEye.Core.Service
         private readonly ThemeService theme;
         //托盘菜单项
         private ContextMenu contextMenu;
+        private MenuItem menuItem_Status;
         private MenuItem menuItem_NoReset;
         private MenuItem menuItem_Statistic;
         private MenuItem menuItem_Options;
@@ -34,6 +35,8 @@ namespace ProjectEye.Core.Service
         private MenuItem menuItem_NoReset_Off;
 
         private DispatcherTimer noresetTimer;
+        private DateTime? noresetEndsAt;
+        private bool trayMenuDeactivateHooked;
 
         private string lastIcon = string.Empty;
 
@@ -119,6 +122,7 @@ namespace ProjectEye.Core.Service
             notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             noresetTimer = new DispatcherTimer();
+            noresetTimer.Tick += NoresetTimer_Tick;
 
         }
         #endregion
@@ -135,6 +139,10 @@ namespace ProjectEye.Core.Service
         {
             UpdateIcon("overheated", false);
             SetText($"20min20s: {Application.Current.Resources["Lang_TimeconsumingOperation"]}");
+            UpdateStatusMenu(
+                "20min20s",
+                Application.Current.Resources["Lang_TimeconsumingOperation"]?.ToString(),
+                System.Windows.Media.Color.FromRgb(239, 68, 68));
         }
         //后台工作任务运行结束时
         private void BackgroundWorker_OnCompleted()
@@ -210,7 +218,7 @@ namespace ProjectEye.Core.Service
                 //右键单击弹出托盘菜单
                 contextMenu.IsOpen = true;
                 //激活主窗口，用于处理关闭托盘菜单
-                App.Current.MainWindow.Activate();
+                App.Current.MainWindow?.Activate();
 
             }
         }
@@ -243,24 +251,40 @@ namespace ProjectEye.Core.Service
         private void CreateTrayMenu()
         {
             contextMenu = new ContextMenu();
-            App.Current.Deactivated += (e, c) =>
+            contextMenu.MinWidth = 240;
+            if (!trayMenuDeactivateHooked)
             {
-                contextMenu.IsOpen = false;
-            };
+                App.Current.Deactivated += (e, c) =>
+                {
+                    contextMenu.IsOpen = false;
+                };
+                trayMenuDeactivateHooked = true;
+            }
+
+            menuItem_Status = new MenuItem();
+            menuItem_Status.Focusable = false;
+            menuItem_Status.IsHitTestVisible = false;
+            menuItem_Status.StaysOpenOnClick = true;
+            menuItem_Status.Header = BuildStatusHeader(
+                "20min20s",
+                Application.Current.Resources["Lang_EffectiveUsageUntilNextBreak"]?.ToString(),
+                System.Windows.Media.Color.FromRgb(14, 165, 164));
             //托盘菜单项
             menuItem_Statistic = new MenuItem();
-            //menuItem_Statistic.Header = "查看数据统计";
             menuItem_Statistic.Header = Application.Current.Resources["Lang_Statistics"];
+            menuItem_Statistic.Icon = CreateMenuGlyph("\xE9D2");
             menuItem_Statistic.Visibility = config.options.General.Data ? Visibility.Visible : Visibility.Collapsed;
             menuItem_Statistic.Click += menuItem_Statistic_Click;
 
             menuItem_Options = new MenuItem();
             menuItem_Options.Header = Application.Current.Resources["Lang_Settings"];
+            menuItem_Options.Icon = CreateMenuGlyph("\xE713");
             menuItem_Options.Click += menuItem_Options_Click;
 
 
             menuItem_NoReset = new MenuItem();
             menuItem_NoReset.Header = Application.Current.Resources["Lang_Suspendnow"];
+            menuItem_NoReset.Icon = CreateMenuGlyph("\xE769");
 
             menuItem_NoReset_OneHour = new MenuItem();
             menuItem_NoReset_OneHour.Header = Application.Current.Resources["Lang_Onehours"];
@@ -283,9 +307,12 @@ namespace ProjectEye.Core.Service
 
             menuItem_Quit = new MenuItem();
             menuItem_Quit.Header = Application.Current.Resources["Lang_Quit"]; ;
+            menuItem_Quit.Icon = CreateMenuGlyph("\xE8BB");
             menuItem_Quit.Click += menuItem_Exit_Click;
 
             //添加托盘菜单项
+            contextMenu.Items.Add(menuItem_Status);
+            contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(menuItem_Statistic);
             contextMenu.Items.Add(menuItem_Options);
             contextMenu.Items.Add(new Separator());
@@ -323,6 +350,7 @@ namespace ProjectEye.Core.Service
         private void SetNoReset(int hour)
         {
             config.options.General.Noreset = true;
+            noresetEndsAt = null;
             menuItem_NoReset_OneHour.IsChecked = false;
             menuItem_NoReset_TwoHour.IsChecked = false;
             menuItem_NoReset_Forver.IsChecked = false;
@@ -334,6 +362,7 @@ namespace ProjectEye.Core.Service
             {
                 //关闭
                 config.options.General.Noreset = false;
+                noresetEndsAt = null;
                 menuItem_NoReset.IsChecked = false;
                 mainService.Start();
                 UpdateIcon("sunglasses");
@@ -342,6 +371,7 @@ namespace ProjectEye.Core.Service
             else if (hour == 0)
             {
                 //直到下次启动
+                noresetEndsAt = null;
                 menuItem_NoReset.IsChecked = true;
                 mainService.Pause(false);
             }
@@ -350,14 +380,9 @@ namespace ProjectEye.Core.Service
                 //指定计时
                 menuItem_NoReset.IsChecked = true;
                 mainService.Pause(false);
+                noresetEndsAt = DateTime.Now.AddHours(hour);
 
                 noresetTimer.Interval = new TimeSpan(hour, 0, 0);
-                noresetTimer.Tick += (e, c) =>
-                {
-                    SetNoReset(-1);
-                    menuItem_NoReset_Off.IsChecked = true;
-                    noresetTimer.Stop();
-                };
                 noresetTimer.Start();
             }
         }
@@ -387,10 +412,18 @@ namespace ProjectEye.Core.Service
                 return;
             }
 
+            string statusTitle = "20min20s";
+            string statusDetail = string.Empty;
+            System.Windows.Media.Color accentColor = System.Windows.Media.Color.FromRgb(14, 165, 164);
+
             if (config.options.General.IsTomatoMode)
             {
                 UpdateIcon("tomato");
                 SetText("20min20s");
+                statusTitle = Application.Current.Resources["Lang_TomatoTimer"]?.ToString();
+                statusDetail = Application.Current.Resources["Lang_Tomato"]?.ToString();
+                accentColor = System.Windows.Media.Color.FromRgb(249, 115, 22);
+                UpdateStatusMenu(statusTitle, statusDetail, accentColor);
                 return;
             }
 
@@ -398,6 +431,10 @@ namespace ProjectEye.Core.Service
             {
                 UpdateIcon("dizzy");
                 SetText($"20min20s: {Application.Current.Resources["Lang_Reminderisoff"]}");
+                statusTitle = Application.Current.Resources["Lang_Reminderisoff"]?.ToString();
+                statusDetail = GetNoResetDetail();
+                accentColor = System.Windows.Media.Color.FromRgb(245, 158, 11);
+                UpdateStatusMenu(statusTitle, statusDetail, accentColor);
                 return;
             }
 
@@ -406,23 +443,166 @@ namespace ProjectEye.Core.Service
                 case RuntimeStatus.PausedInactivity:
                     UpdateIcon("sleeping");
                     SetText($"20min20s: {Application.Current.Resources["Lang_PausedDueToInactivity"]}");
+                    statusTitle = Application.Current.Resources["Lang_PausedDueToInactivity"]?.ToString();
+                    statusDetail = FormatRemainingTime(mainService.GetRestCountdownMinutes());
+                    accentColor = System.Windows.Media.Color.FromRgb(99, 102, 241);
+                    UpdateStatusMenu(statusTitle, statusDetail, accentColor);
                     return;
                 case RuntimeStatus.DeferredBreak:
                     UpdateIcon("overheated");
                     SetText($"20min20s: {Application.Current.Resources["Lang_BreakReminderPending"]}");
+                    statusTitle = Application.Current.Resources["Lang_BreakReminderPending"]?.ToString();
+                    statusDetail = Application.Current.Resources["Lang_Breaktimeisstartingsoon"]?.ToString();
+                    accentColor = System.Windows.Media.Color.FromRgb(239, 68, 68);
+                    UpdateStatusMenu(statusTitle, statusDetail, accentColor);
                     return;
                 default:
                     UpdateIcon("sunglasses");
+                    statusTitle = Application.Current.Resources["Lang_EffectiveUsageUntilNextBreak"]?.ToString();
                     if (mainService.IsWorkTimerRun())
                     {
-                        SetText($"20min20s\r\n{Application.Current.Resources["Lang_EffectiveUsageUntilNextBreak"]}: {FormatRemainingTime(mainService.GetRestCountdownMinutes())}");
+                        statusDetail = FormatRemainingTime(mainService.GetRestCountdownMinutes());
+                        SetText($"20min20s\r\n{Application.Current.Resources["Lang_EffectiveUsageUntilNextBreak"]}: {statusDetail}");
                     }
                     else
                     {
+                        statusDetail = string.Empty;
                         SetText("20min20s");
                     }
+                    accentColor = System.Windows.Media.Color.FromRgb(14, 165, 164);
+                    UpdateStatusMenu(statusTitle, statusDetail, accentColor);
                     return;
             }
+        }
+
+        private void NoresetTimer_Tick(object sender, EventArgs e)
+        {
+            SetNoReset(-1);
+            menuItem_NoReset_Off.IsChecked = true;
+            noresetTimer.Stop();
+        }
+
+        private string GetNoResetDetail()
+        {
+            if (noresetEndsAt.HasValue)
+            {
+                TimeSpan remaining = noresetEndsAt.Value - DateTime.Now;
+                if (remaining > TimeSpan.Zero)
+                {
+                    return FormatDuration(remaining);
+                }
+            }
+
+            return Application.Current.Resources["Lang_Suspenduntilnextstartup"]?.ToString();
+        }
+
+        private string FormatDuration(TimeSpan duration)
+        {
+            if (duration.TotalHours >= 1)
+            {
+                int hours = Math.Max(0, (int)duration.TotalHours);
+                int minutes = Math.Max(0, duration.Minutes);
+                if (minutes == 0)
+                {
+                    return $"{hours}{Application.Current.Resources["Lang_Hours_n"]}";
+                }
+                return $"{hours}{Application.Current.Resources["Lang_Hours_n"]} {minutes}{Application.Current.Resources["Lang_Minutes_n"]}";
+            }
+
+            if (duration.TotalMinutes >= 1)
+            {
+                return $"{Math.Max(1, (int)Math.Ceiling(duration.TotalMinutes))}{Application.Current.Resources["Lang_Minutes_n"]}";
+            }
+
+            return $"{Math.Max(1, (int)Math.Ceiling(duration.TotalSeconds))}{Application.Current.Resources["Lang_Seconds_n"]}";
+        }
+
+        private void UpdateStatusMenu(string title, string detail, System.Windows.Media.Color accentColor)
+        {
+            if (menuItem_Status == null)
+            {
+                return;
+            }
+
+            menuItem_Status.Header = BuildStatusHeader(title, detail, accentColor);
+        }
+
+        private object BuildStatusHeader(string title, string detail, System.Windows.Media.Color accentColor)
+        {
+            System.Windows.Media.Brush accentBrush = new System.Windows.Media.SolidColorBrush(accentColor);
+            System.Windows.Media.Brush surfaceBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(28, accentColor.R, accentColor.G, accentColor.B));
+            System.Windows.Media.Brush borderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(72, accentColor.R, accentColor.G, accentColor.B));
+            System.Windows.Media.Brush titleBrush = GetBrushResource("FontBrush", System.Windows.Media.Brushes.Black);
+            System.Windows.Media.Brush detailBrush = GetBrushWithOpacity(titleBrush, 0.72);
+
+            var brandText = new TextBlock
+            {
+                Text = "20min20s",
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = accentBrush
+            };
+
+            var titleText = new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(title) ? "20min20s" : title,
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Foreground = titleBrush,
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            var content = new StackPanel();
+            content.Children.Add(brandText);
+            content.Children.Add(titleText);
+
+            if (!string.IsNullOrWhiteSpace(detail))
+            {
+                content.Children.Add(new TextBlock
+                {
+                    Text = detail,
+                    Margin = new Thickness(0, 4, 0, 0),
+                    FontSize = 12,
+                    Foreground = detailBrush,
+                    TextWrapping = TextWrapping.Wrap
+                });
+            }
+
+            return new Border
+            {
+                Margin = new Thickness(8, 8, 8, 4),
+                Padding = new Thickness(12, 10, 12, 10),
+                CornerRadius = new CornerRadius(10),
+                Background = surfaceBrush,
+                BorderBrush = borderBrush,
+                BorderThickness = new Thickness(1),
+                Child = content
+            };
+        }
+
+        private TextBlock CreateMenuGlyph(string glyph)
+        {
+            return new TextBlock
+            {
+                Text = glyph,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 13,
+                Foreground = GetBrushResource("ThemeBrush", System.Windows.Media.Brushes.DodgerBlue),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+        }
+
+        private System.Windows.Media.Brush GetBrushResource(string key, System.Windows.Media.Brush fallback)
+        {
+            return Application.Current.Resources[key] as System.Windows.Media.Brush ?? fallback;
+        }
+
+        private System.Windows.Media.Brush GetBrushWithOpacity(System.Windows.Media.Brush source, double opacity)
+        {
+            System.Windows.Media.Brush cloned = source?.CloneCurrentValue() ?? System.Windows.Media.Brushes.Gray.CloneCurrentValue();
+            cloned.Opacity = opacity;
+            return cloned;
         }
 
         private string FormatRemainingTime(double restCountdownMinutes)
